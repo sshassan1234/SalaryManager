@@ -1,0 +1,248 @@
+
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Salary Manager</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:#f1f5f9;margin:0;color:#172033}
+header{background:#123b68;color:white;padding:20px 15px}
+header h1{margin:0 0 8px;font-size:25px}
+header p{margin:0;font-size:14px}
+main{max-width:900px;margin:auto;padding:15px}
+.card{background:white;padding:16px;border-radius:12px;margin-bottom:15px;box-shadow:0 2px 8px #0001}
+h2{font-size:19px;margin:0 0 14px}
+label{display:block;font-size:14px;margin:10px 0 5px}
+input,select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-size:16px;background:white}
+button{padding:11px 14px;border:0;border-radius:7px;background:#1764aa;color:white;font-size:15px;margin:8px 4px 0 0;cursor:pointer}
+button.secondary{background:#475569}
+button.danger{background:#b42318}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.stat{background:#eaf3ff;padding:13px;border-radius:8px}
+.stat strong{display:block;font-size:21px;margin-top:6px;overflow-wrap:anywhere}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:9px 6px;border-bottom:1px solid #e2e8f0;text-align:left}
+.tablewrap{overflow-x:auto}
+small{color:#64748b}
+#message{margin-top:10px;color:#1764aa}
+@media(max-width:420px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}header h1{font-size:22px}}
+@media print{header,form,.noprint,#dashboard{display:none!important}body{background:white}main{padding:0}.card{box-shadow:none}}
+</style>
+</head>
+<body>
+<header>
+<h1>Salary Manager</h1>
+<p>Employee • Attendance • Monthly Salary • Payslip</p>
+</header>
+
+<main>
+<section class="card" id="dashboard">
+<h2>Dashboard</h2>
+<div class="stats">
+<div class="stat">Total Employees<strong id="total">0</strong></div>
+<div class="stat">Monthly Payroll<strong id="payroll">Rs. 0</strong></div>
+</div>
+</section>
+
+<section class="card">
+<h2>Add New Employee</h2>
+<form id="employeeForm">
+<div class="grid">
+<div><label>Employee ID</label><input id="eid" required placeholder="مثلاً EMP001"></div>
+<div><label>Employee Name</label><input id="ename" required placeholder="Full name"></div>
+<div><label>Mobile Number</label><input id="phone" placeholder="03XXXXXXXXX"></div>
+<div><label>Monthly Basic Salary (PKR)</label><input id="salary" type="number" min="0" required placeholder="30000"></div>
+</div>
+<button type="submit">Save Employee</button>
+</form>
+<div id="message" role="status"></div>
+</section>
+
+<section class="card">
+<h2>Monthly Attendance & Salary</h2>
+<label>Select Employee</label>
+<select id="employeeSelect"><option value="">Select employee</option></select>
+<div class="grid">
+<div><label>Salary Period Start</label><input id="periodStart" type="date"></div>
+<div><label>Salary Period End</label><input id="periodEnd" type="date"></div>
+<div><label>Total Salary Days</label><input id="days" type="number" min="1" value="30"></div>
+<div><label>Present Days</label><input id="present" type="number" min="0" value="25"></div>
+<div><label>Paid Leave Days</label><input id="paid" type="number" min="0" value="0"></div>
+<div><label>Unpaid Leave Days</label><input id="unpaid" type="number" min="0" value="5"></div>
+<div><label>Other Allowance (PKR)</label><input id="allowance" type="number" min="0" value="0"></div>
+<div><label>Deduction (PKR)</label><input id="deduction" type="number" min="0" value="0"></div>
+</div>
+<button type="button" onclick="calculate()">Calculate Salary</button>
+<button type="button" onclick="savePayroll()">Save Payroll</button>
+<div id="result" aria-live="polite"></div>
+</section>
+
+<section class="card">
+<h2>Employee List</h2>
+<div class="tablewrap">
+<table>
+<thead><tr><th>ID</th><th>Name</th><th>Salary</th><th>Action</th></tr></thead>
+<tbody id="employeeRows"></tbody>
+</table>
+</div>
+</section>
+
+<section class="card">
+<h2>Saved Payroll Records</h2>
+<div class="tablewrap">
+<table>
+<thead><tr><th>Employee</th><th>Period</th><th>Present</th><th>Paid Leave</th><th>Unpaid Leave</th><th>Net Salary</th><th>Slip</th></tr></thead>
+<tbody id="payrollRows"></tbody>
+</table>
+</div>
+<button class="secondary" onclick="exportCSV()">Export Payroll CSV</button>
+</section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const money = n => 'Rs. ' + Number(n).toLocaleString('en-PK',{
+ maximumFractionDigits:2
+});
+
+let employees = read('sm_employees');
+let records = read('sm_payroll');
+let lastCalculation = null;
+
+function read(key){
+ try{return JSON.parse(localStorage.getItem(key)||'[]')}
+ catch(e){return []}
+}
+function persist(){
+ try{
+  localStorage.setItem('sm_employees',JSON.stringify(employees));
+  localStorage.setItem('sm_payroll',JSON.stringify(records));
+  return true;
+ }catch(e){
+  alert('Storage full or unavailable. Export your records and free browser storage.');
+  return false;
+ }
+}
+function esc(s){
+ return String(s??'').replace(/[&<>"']/g,c=>({
+ '&':'&amp;','<':'&lt;','>':'&gt;',
+ '"':'&quot;',"'":'&#39;'
+ }[c]));
+}
+function refresh(){
+ $('total').textContent=employees.length;
+ $('payroll').textContent=money(records.reduce((s,r)=>s+Number(r.net||0),0));
+ $('employeeSelect').innerHTML='<option value="">Select employee</option>'+
+ employees.map(e=>`<option value="${esc(e.id)}">${esc(e.id)} — ${esc(e.name)}</option>`).join('');
+ $('employeeRows').innerHTML=employees.map(e=>`<tr>
+ <td>${esc(e.id)}</td><td>${esc(e.name)}<br><small>${esc(e.phone)}</small></td>
+ <td>${money(e.salary)}</td><td><button class="danger" onclick="deleteEmployee('${encodeURIComponent(e.id)}')">Delete</button></td>
+ </tr>`).join('');
+ $('payrollRows').innerHTML=records.map((r,i)=>`<tr>
+ <td>${esc(r.name)} (${esc(r.id)})</td>
+ <td>${esc(r.start)} to ${esc(r.end)}</td>
+ <td>${r.present}</td><td>${r.paid}</td><td>${r.unpaid}</td>
+ <td>${money(r.net)}</td><td><button onclick="showSlip(${i})">View / Print</button></td>
+ </tr>`).join('');
+}
+$('employeeForm').addEventListener('submit',e=>{
+ e.preventDefault();
+ const id=$('eid').value.trim();
+ if(employees.some(x=>x.id.toLowerCase()===id.toLowerCase())){
+  $('message').textContent='This Employee ID already exists.';return;
+ }
+ employees.push({
+  id,name:$('ename').value.trim(),phone:$('phone').value.trim(),
+  salary:Number($('salary').value)
+ });
+ if(!persist()){employees.pop();return}
+ e.target.reset();$('message').textContent='Employee saved successfully.';
+ refresh();
+});
+function deleteEmployee(encoded){
+ const id=decodeURIComponent(encoded);
+ if(!confirm('Delete this employee? Existing payroll records will remain.'))return;
+ employees=employees.filter(e=>e.id!==id);
+ if(persist())refresh();
+}
+$('employeeSelect').addEventListener('change',()=>{
+ const e=employees.find(x=>x.id===$('employeeSelect').value);
+ if(e)$('result').innerHTML='<small>Selected: '+esc(e.name)+' — Basic salary '+money(e.salary)+'</small>';
+});
+function getCalculation(){
+ const e=employees.find(x=>x.id===$('employeeSelect').value);
+ if(!e){alert('Please select an employee.');return null}
+ const start=$('periodStart').value,end=$('periodEnd').value;
+ const days=Number($('days').value),present=Number($('present').value);
+ const paid=Number($('paid').value),unpaid=Number($('unpaid').value);
+ const allowance=Number($('allowance').value),deduction=Number($('deduction').value);
+ if(!start||!end||start>end){alert('Please enter a valid salary period.');return null}
+ if(!Number.isInteger(days)||days<1||
+ ![present,paid,unpaid].every(n=>Number.isInteger(n)&&n>=0)||
+ present+paid+unpaid>days||allowance<0||deduction<0){
+  alert('Check the days, allowance and deduction. Days cannot exceed total salary days.');return null;
+ }
+ const daily=e.salary/days;
+ const gross=e.salary-(daily*unpaid)+allowance;
+ const net=Math.max(0,gross-deduction);
+ return {id:e.id,name:e.name,phone:e.phone,basic:e.salary,start,end,
+ days,present,paid,unpaid,allowance,deduction,
+ unpaidDeduction:daily*unpaid,gross,net};
+}
+function calculate(){
+ lastCalculation=getCalculation();
+ if(!lastCalculation)return;
+ const r=lastCalculation;
+ $('result').innerHTML=`
+ <hr><p>Basic Salary: <b>${money(r.basic)}</b></p>
+ <p>Unpaid Leave Deduction: <b>${money(r.unpaidDeduction)}</b></p>
+ <p>Allowance: <b>${money(r.allowance)}</b></p>
+ <p>Other Deduction: <b>${money(r.deduction)}</b></p>
+ <h2>Net Salary: ${money(r.net)}</h2>
+ <small>Paid leave is counted as paid time. This calculation deducts only unpaid leave. Verify company policy before payment.</small>`;
+}
+function savePayroll(){
+ const r=getCalculation();
+ if(!r)return;
+ const exists=records.some(x=>x.id===r.id&&x.start===r.start&&x.end===r.end);
+ if(exists&&!confirm('A payroll record exists for this employee and period. Save another record?'))return;
+ records.push({...r,savedAt:new Date().toISOString()});
+ if(persist()){lastCalculation=r;refresh();alert('Payroll saved.')}
+ else records.pop();
+}
+function showSlip(i){
+ const r=records[i];
+ $('result').innerHTML=`
+ <div id="slip"><hr><h2>Salary Slip</h2>
+ <p><b>Employee:</b> ${esc(r.name)}</p>
+ <p><b>Employee ID:</b> ${esc(r.id)}</p>
+ <p><b>Period:</b> ${esc(r.start)} to ${esc(r.end)}</p>
+ <p>Basic Salary: ${money(r.basic)}</p>
+ <p>Present Days: ${r.present} / ${r.days}</p>
+ <p>Paid Leave: ${r.paid} days</p>
+ <p>Unpaid Leave: ${r.unpaid} days</p>
+ <p>Unpaid Deduction: ${money(r.unpaidDeduction)}</p>
+ <p>Allowance: ${money(r.allowance)}</p>
+ <p>Other Deduction: ${money(r.deduction)}</p>
+ <h2>Net Pay: ${money(r.net)}</h2>
+ <p>Employee Signature: ______________</p>
+ <p>Authorized Signature: ______________</p></div>
+ <button onclick="window.print()">Print / Save PDF</button>`;
+ $('result').scrollIntoView({behavior:'smooth'});
+}
+function exportCSV(){
+ const rows=[['Employee ID','Name','Period Start','Period End','Basic Salary','Total Days','Present','Paid Leave','Unpaid Leave','Unpaid Deduction','Allowance','Deduction','Net Salary'],
+ ...records.map(r=>[r.id,r.name,r.start,r.end,r.basic,r.days,r.present,r.paid,r.unpaid,r.unpaidDeduction,r.allowance,r.deduction,r.net])];
+ const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+ const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement('a');a.href=url;a.download='salary-payroll.csv';a.click();
+ URL.revokeObjectURL(url);
+}
+refresh();
+</script>
+</body>
+</html>
