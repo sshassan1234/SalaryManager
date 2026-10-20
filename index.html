@@ -11,237 +11,514 @@ body{font-family:Arial,sans-serif;background:#f1f5f9;margin:0;color:#172033}
 header{background:#123b68;color:white;padding:20px 15px}
 header h1{margin:0 0 8px;font-size:25px}
 header p{margin:0;font-size:14px}
-main{max-width:900px;margin:auto;padding:15px}
+main{max-width:1000px;margin:auto;padding:15px}
 .card{background:white;padding:16px;border-radius:12px;margin-bottom:15px;box-shadow:0 2px 8px #0001}
 h2{font-size:19px;margin:0 0 14px}
 label{display:block;font-size:14px;margin:10px 0 5px}
 input,select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-size:16px;background:white}
-button{padding:11px 14px;border:0;border-radius:7px;background:#1764aa;color:white;font-size:15px;margin:8px 4px 0 0;cursor:pointer}
+button{padding:11px 14px;border:0;border-radius:7px;background:#1764aa;color:white;font-size:14px;margin:8px 4px 0 0;cursor:pointer}
 button.secondary{background:#475569}
 button.danger{background:#b42318}
+button.edit{background:#087f5b}
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .stat{background:#eaf3ff;padding:13px;border-radius:8px}
 .stat strong{display:block;font-size:21px;margin-top:6px;overflow-wrap:anywhere}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{padding:9px 6px;border-bottom:1px solid #e2e8f0;text-align:left}
+th,td{padding:9px 6px;border-bottom:1px solid #e2e8f0;text-align:left;white-space:normal}
 .tablewrap{overflow-x:auto}
 small{color:#64748b}
 #message{margin-top:10px;color:#1764aa}
+.resultbox{background:#f8fafc;padding:12px;border-radius:8px;margin-top:12px}
 @media(max-width:420px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}header h1{font-size:22px}}
-@media print{header,form,.noprint,#dashboard{display:none!important}body{background:white}main{padding:0}.card{box-shadow:none}}
+@media print{
+ header,form,.noprint,#dashboard,#attendanceCard,#employeeCard,#recordsCard{display:none!important}
+ body{background:white}
+ main{padding:0}
+ #resultCard{display:block!important;box-shadow:none}
+ #resultCard .noprint{display:none!important}
+ #slip{display:block!important}
+}
 </style>
 </head>
 <body>
 <header>
 <h1>Salary Manager</h1>
-<p>Employee • Attendance • Monthly Salary • Payslip</p>
+<p>ملازمین • عہدے • حاضری • ماہانہ تنخواہ • تنخواہ سلپ</p>
 </header>
 
 <main>
 <section class="card" id="dashboard">
-<h2>Dashboard</h2>
+<h2>Dashboard / خلاصہ</h2>
 <div class="stats">
-<div class="stat">Total Employees<strong id="total">0</strong></div>
-<div class="stat">Monthly Payroll<strong id="payroll">Rs. 0</strong></div>
+<div class="stat">کل ملازمین<strong id="total">0</strong></div>
+<div class="stat">محفوظ تنخواہوں کا مجموعہ<strong id="payroll">Rs. 0</strong></div>
 </div>
 </section>
 
 <section class="card">
-<h2>Add New Employee</h2>
+<h2>نیا ملازم شامل کریں</h2>
 <form id="employeeForm">
 <div class="grid">
-<div><label>Employee ID</label><input id="eid" required placeholder="مثلاً EMP001"></div>
-<div><label>Employee Name</label><input id="ename" required placeholder="Full name"></div>
-<div><label>Mobile Number</label><input id="phone" placeholder="03XXXXXXXXX"></div>
-<div><label>Monthly Basic Salary (PKR)</label><input id="salary" type="number" min="0" required placeholder="30000"></div>
+<div>
+<label>Employee ID / ملازم نمبر</label>
+<input id="eid" required placeholder="مثلاً EMP001">
 </div>
-<button type="submit">Save Employee</button>
+<div>
+<label>Employee Name / نام</label>
+<input id="ename" required placeholder="ملازم کا مکمل نام">
+</div>
+<div>
+<label>عہدہ / Designation</label>
+<select id="designation" required>
+<option value="">عہدہ منتخب کریں</option>
+<option>Manager</option>
+<option>General Manager (GM)</option>
+<option>Operations Manager</option>
+<option>Security Guard</option>
+<option>Driver</option>
+<option>Bike Rider</option>
+<option>MVO / Vigilance Officer</option>
+<option>Duty Officer</option>
+<option>CCTV Operator</option>
+<option>Control Room Operator</option>
+</select>
+</div>
+<div>
+<label>موبائل نمبر</label>
+<input id="phone" type="tel" placeholder="03XXXXXXXXX">
+</div>
+<div>
+<label>ماہانہ بنیادی تنخواہ (PKR)</label>
+<input id="salary" type="number" min="0" step="0.01" required placeholder="30000">
+</div>
+</div>
+<button type="submit">ملازم محفوظ کریں</button>
 </form>
 <div id="message" role="status"></div>
 </section>
 
-<section class="card">
-<h2>Monthly Attendance & Salary</h2>
-<label>Select Employee</label>
-<select id="employeeSelect"><option value="">Select employee</option></select>
+<section class="card" id="attendanceCard">
+<h2>ماہانہ حاضری اور تنخواہ</h2>
+<label>ملازم منتخب کریں</label>
+<select id="employeeSelect">
+<option value="">ملازم منتخب کریں</option>
+</select>
+<div id="selectedInfo"></div>
 <div class="grid">
-<div><label>Salary Period Start</label><input id="periodStart" type="date"></div>
-<div><label>Salary Period End</label><input id="periodEnd" type="date"></div>
-<div><label>Total Salary Days</label><input id="days" type="number" min="1" value="30"></div>
-<div><label>Present Days</label><input id="present" type="number" min="0" value="25"></div>
-<div><label>Paid Leave Days</label><input id="paid" type="number" min="0" value="0"></div>
-<div><label>Unpaid Leave Days</label><input id="unpaid" type="number" min="0" value="5"></div>
-<div><label>Other Allowance (PKR)</label><input id="allowance" type="number" min="0" value="0"></div>
-<div><label>Deduction (PKR)</label><input id="deduction" type="number" min="0" value="0"></div>
+<div><label>تنخواہ کی مدت شروع</label><input id="periodStart" type="date" required></div>
+<div><label>تنخواہ کی مدت ختم</label><input id="periodEnd" type="date" required></div>
+<div><label>کل تنخواہ کے دن</label><input id="days" type="number" min="1" value="30"></div>
+<div><label>حاضر دن</label><input id="present" type="number" min="0" value="25"></div>
+<div><label>تنخواہ سمیت چھٹیاں</label><input id="paid" type="number" min="0" value="0"></div>
+<div><label>بغیر تنخواہ چھٹیاں</label><input id="unpaid" type="number" min="0" value="5"></div>
+<div><label>اضافی الاؤنس (PKR)</label><input id="allowance" type="number" min="0" value="0"></div>
+<div><label>دیگر کٹوتی (PKR)</label><input id="deduction" type="number" min="0" value="0"></div>
 </div>
-<button type="button" onclick="calculate()">Calculate Salary</button>
-<button type="button" onclick="savePayroll()">Save Payroll</button>
-<div id="result" aria-live="polite"></div>
+<p><small>حاضر دن + تنخواہ سمیت چھٹیاں + بغیر تنخواہ چھٹیاں، کل دنوں سے زیادہ نہیں ہونے چاہئیں۔ صرف بغیر تنخواہ چھٹیوں کی کٹوتی ہوگی۔</small></p>
+<button type="button" onclick="calculate()">تنخواہ کا حساب</button>
+<button type="button" onclick="savePayroll()">تنخواہ محفوظ کریں</button>
 </section>
 
-<section class="card">
-<h2>Employee List</h2>
+<section class="card" id="resultCard">
+<h2>حساب / تنخواہ سلپ</h2>
+<div id="result" aria-live="polite">پہلے ملازم منتخب کرکے تنخواہ کا حساب کریں۔</div>
+</section>
+
+<section class="card" id="employeeCard">
+<h2>ملازمین کی فہرست</h2>
 <div class="tablewrap">
 <table>
-<thead><tr><th>ID</th><th>Name</th><th>Salary</th><th>Action</th></tr></thead>
+<thead>
+<tr><th>نمبر</th><th>نام اور موبائل</th><th>عہدہ</th><th>تنخواہ</th><th>عمل</th></tr>
+</thead>
 <tbody id="employeeRows"></tbody>
 </table>
 </div>
 </section>
 
-<section class="card">
-<h2>Saved Payroll Records</h2>
+<section class="card" id="recordsCard">
+<h2>محفوظ تنخواہوں کا ریکارڈ</h2>
 <div class="tablewrap">
 <table>
-<thead><tr><th>Employee</th><th>Period</th><th>Present</th><th>Paid Leave</th><th>Unpaid Leave</th><th>Net Salary</th><th>Slip</th></tr></thead>
+<thead>
+<tr><th>ملازم</th><th>عہدہ</th><th>مدت</th><th>حاضر</th><th>ادا شدہ چھٹی</th><th>غیر ادا شدہ چھٹی</th><th>خالص تنخواہ</th><th>سلپ</th></tr>
+</thead>
 <tbody id="payrollRows"></tbody>
 </table>
 </div>
-<button class="secondary" onclick="exportCSV()">Export Payroll CSV</button>
+<button class="secondary" onclick="exportCSV()">CSV میں ریکارڈ ڈاؤن لوڈ کریں</button>
 </section>
 </main>
 
 <script>
 const $ = id => document.getElementById(id);
-const money = n => 'Rs. ' + Number(n).toLocaleString('en-PK',{
- maximumFractionDigits:2
+const money = n => 'Rs. ' + Number(n || 0).toLocaleString('en-PK',{
+  maximumFractionDigits:2
 });
+
+const designations = [
+  "Manager",
+  "General Manager (GM)",
+  "Operations Manager",
+  "Security Guard",
+  "Driver",
+  "Bike Rider",
+  "MVO / Vigilance Officer",
+  "Duty Officer",
+  "CCTV Operator",
+  "Control Room Operator"
+];
+
+function read(key){
+  try{
+    const value = JSON.parse(localStorage.getItem(key) || '[]');
+    return Array.isArray(value) ? value : [];
+  }catch(e){
+    return [];
+  }
+}
 
 let employees = read('sm_employees');
 let records = read('sm_payroll');
 let lastCalculation = null;
 
-function read(key){
- try{return JSON.parse(localStorage.getItem(key)||'[]')}
- catch(e){return []}
-}
+/* پرانے ریکارڈ برقرار رکھیں اور نئے فیلڈز شامل کریں */
+employees = employees.map(e => ({
+  ...e,
+  designation: e.designation || 'Other'
+}));
+
+records = records.map(r => ({
+  ...r,
+  designation: r.designation ||
+    (employees.find(e => e.id === r.id)?.designation || 'Other')
+}));
+
 function persist(){
- try{
-  localStorage.setItem('sm_employees',JSON.stringify(employees));
-  localStorage.setItem('sm_payroll',JSON.stringify(records));
-  return true;
- }catch(e){
-  alert('Storage full or unavailable. Export your records and free browser storage.');
-  return false;
- }
+  try{
+    localStorage.setItem('sm_employees', JSON.stringify(employees));
+    localStorage.setItem('sm_payroll', JSON.stringify(records));
+    return true;
+  }catch(e){
+    alert('ریکارڈ محفوظ نہیں ہو سکا۔ براہ کرم جگہ خالی کریں اور ریکارڈ کا بیک اپ رکھیں۔');
+    return false;
+  }
 }
+
 function esc(s){
- return String(s??'').replace(/[&<>"']/g,c=>({
- '&':'&amp;','<':'&lt;','>':'&gt;',
- '"':'&quot;',"'":'&#39;'
- }[c]));
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[c]));
 }
+
 function refresh(){
- $('total').textContent=employees.length;
- $('payroll').textContent=money(records.reduce((s,r)=>s+Number(r.net||0),0));
- $('employeeSelect').innerHTML='<option value="">Select employee</option>'+
- employees.map(e=>`<option value="${esc(e.id)}">${esc(e.id)} — ${esc(e.name)}</option>`).join('');
- $('employeeRows').innerHTML=employees.map(e=>`<tr>
- <td>${esc(e.id)}</td><td>${esc(e.name)}<br><small>${esc(e.phone)}</small></td>
- <td>${money(e.salary)}</td><td><button class="danger" onclick="deleteEmployee('${encodeURIComponent(e.id)}')">Delete</button></td>
- </tr>`).join('');
- $('payrollRows').innerHTML=records.map((r,i)=>`<tr>
- <td>${esc(r.name)} (${esc(r.id)})</td>
- <td>${esc(r.start)} to ${esc(r.end)}</td>
- <td>${r.present}</td><td>${r.paid}</td><td>${r.unpaid}</td>
- <td>${money(r.net)}</td><td><button onclick="showSlip(${i})">View / Print</button></td>
- </tr>`).join('');
+  $('total').textContent = employees.length;
+  $('payroll').textContent = money(
+    records.reduce((sum, r) => sum + Number(r.net || 0), 0)
+  );
+
+  const oldSelected = $('employeeSelect').value;
+
+  $('employeeSelect').innerHTML =
+    '<option value="">ملازم منتخب کریں</option>' +
+    employees.map(e =>
+      `<option value="${esc(e.id)}">${esc(e.id)} — ${esc(e.name)}</option>`
+    ).join('');
+
+  if(employees.some(e => e.id === oldSelected)){
+    $('employeeSelect').value = oldSelected;
+  }
+
+  $('employeeRows').innerHTML = employees.map(e => `
+    <tr>
+      <td>${esc(e.id)}</td>
+      <td>${esc(e.name)}<br><small>${esc(e.phone || '')}</small></td>
+      <td>${esc(e.designation || 'Other')}</td>
+      <td>${money(e.salary)}</td>
+      <td>
+        <button class="edit" onclick="editSalary('${encodeURIComponent(e.id)}')">تنخواہ تبدیل</button>
+        <button class="danger" onclick="deleteEmployee('${encodeURIComponent(e.id)}')">حذف</button>
+      </td>
+    </tr>
+  `).join('');
+
+  $('payrollRows').innerHTML = records.map((r, i) => `
+    <tr>
+      <td>${esc(r.name)} (${esc(r.id)})</td>
+      <td>${esc(r.designation || 'Other')}</td>
+      <td>${esc(r.start)} تا ${esc(r.end)}</td>
+      <td>${r.present}</td>
+      <td>${r.paid}</td>
+      <td>${r.unpaid}</td>
+      <td>${money(r.net)}</td>
+      <td><button onclick="showSlip(${i})">سلپ دیکھیں</button></td>
+    </tr>
+  `).join('');
 }
-$('employeeForm').addEventListener('submit',e=>{
- e.preventDefault();
- const id=$('eid').value.trim();
- if(employees.some(x=>x.id.toLowerCase()===id.toLowerCase())){
-  $('message').textContent='This Employee ID already exists.';return;
- }
- employees.push({
-  id,name:$('ename').value.trim(),phone:$('phone').value.trim(),
-  salary:Number($('salary').value)
- });
- if(!persist()){employees.pop();return}
- e.target.reset();$('message').textContent='Employee saved successfully.';
- refresh();
+
+$('employeeForm').addEventListener('submit', e => {
+  e.preventDefault();
+
+  const id = $('eid').value.trim();
+  const name = $('ename').value.trim();
+  const designation = $('designation').value;
+  const phone = $('phone').value.trim();
+  const salaryValue = $('salary').value;
+  const salary = Number(salaryValue);
+
+  if(!id || !name || !designations.includes(designation)){
+    $('message').textContent = 'نام، نمبر اور درست عہدہ درج کریں۔';
+    return;
+  }
+
+  if(employees.some(x => String(x.id).toLowerCase() === id.toLowerCase())){
+    $('message').textContent = 'یہ ملازم نمبر پہلے سے موجود ہے۔';
+    return;
+  }
+
+  if(salaryValue === '' || !Number.isFinite(salary) || salary < 0){
+    $('message').textContent = 'درست تنخواہ درج کریں۔';
+    return;
+  }
+
+  const employee = {id, name, designation, phone, salary};
+  employees.push(employee);
+
+  if(!persist()){
+    employees.pop();
+    return;
+  }
+
+  e.target.reset();
+  $('message').textContent = 'ملازم کامیابی سے محفوظ ہوگیا۔';
+  refresh();
 });
+
 function deleteEmployee(encoded){
- const id=decodeURIComponent(encoded);
- if(!confirm('Delete this employee? Existing payroll records will remain.'))return;
- employees=employees.filter(e=>e.id!==id);
- if(persist())refresh();
+  const id = decodeURIComponent(encoded);
+
+  if(!confirm('کیا آپ اس ملازم کو حذف کرنا چاہتے ہیں؟ اس کی پرانی تنخواہ کی سلپس برقرار رہیں گی۔')){
+    return;
+  }
+
+  const oldEmployees = employees;
+  employees = employees.filter(e => e.id !== id);
+
+  if(persist()){
+    refresh();
+  }else{
+    employees = oldEmployees;
+  }
 }
-$('employeeSelect').addEventListener('change',()=>{
- const e=employees.find(x=>x.id===$('employeeSelect').value);
- if(e)$('result').innerHTML='<small>Selected: '+esc(e.name)+' — Basic salary '+money(e.salary)+'</small>';
+
+function editSalary(encoded){
+  const id = decodeURIComponent(encoded);
+  const employee = employees.find(e => e.id === id);
+  if(!employee) return;
+
+  const answer = prompt(
+    'نئی ماہانہ تنخواہ درج کریں (PKR):',
+    String(employee.salary)
+  );
+
+  if(answer === null) return;
+
+  if(answer.trim() === '' || !Number.isFinite(Number(answer)) || Number(answer) < 0){
+    alert('درست تنخواہ درج کریں۔');
+    return;
+  }
+
+  const oldSalary = employee.salary;
+  employee.salary = Number(answer);
+
+  if(persist()){
+    refresh();
+    alert('نئی تنخواہ محفوظ ہوگئی۔ پہلے سے محفوظ تنخواہ کی سلپس تبدیل نہیں ہوں گی۔');
+  }else{
+    employee.salary = oldSalary;
+  }
+}
+
+$('employeeSelect').addEventListener('change', () => {
+  const employee = employees.find(e => e.id === $('employeeSelect').value);
+
+  if(!employee){
+    $('selectedInfo').innerHTML = '';
+    return;
+  }
+
+  $('selectedInfo').innerHTML =
+    `<div class="resultbox">
+      <b>${esc(employee.name)}</b><br>
+      عہدہ: ${esc(employee.designation || 'Other')}<br>
+      بنیادی تنخواہ: ${money(employee.salary)}
+    </div>`;
+
+  $('result').innerHTML = 'اب حاضری اور چھٹیوں کی تفصیل درج کرکے حساب کریں۔';
 });
+
 function getCalculation(){
- const e=employees.find(x=>x.id===$('employeeSelect').value);
- if(!e){alert('Please select an employee.');return null}
- const start=$('periodStart').value,end=$('periodEnd').value;
- const days=Number($('days').value),present=Number($('present').value);
- const paid=Number($('paid').value),unpaid=Number($('unpaid').value);
- const allowance=Number($('allowance').value),deduction=Number($('deduction').value);
- if(!start||!end||start>end){alert('Please enter a valid salary period.');return null}
- if(!Number.isInteger(days)||days<1||
- ![present,paid,unpaid].every(n=>Number.isInteger(n)&&n>=0)||
- present+paid+unpaid>days||allowance<0||deduction<0){
-  alert('Check the days, allowance and deduction. Days cannot exceed total salary days.');return null;
- }
- const daily=e.salary/days;
- const gross=e.salary-(daily*unpaid)+allowance;
- const net=Math.max(0,gross-deduction);
- return {id:e.id,name:e.name,phone:e.phone,basic:e.salary,start,end,
- days,present,paid,unpaid,allowance,deduction,
- unpaidDeduction:daily*unpaid,gross,net};
+  const employee = employees.find(e => e.id === $('employeeSelect').value);
+
+  if(!employee){
+    alert('پہلے ملازم منتخب کریں۔');
+    return null;
+  }
+
+  const start = $('periodStart').value;
+  const end = $('periodEnd').value;
+  const days = Number($('days').value);
+  const present = Number($('present').value);
+  const paid = Number($('paid').value);
+  const unpaid = Number($('unpaid').value);
+  const allowance = Number($('allowance').value);
+  const deduction = Number($('deduction').value);
+
+  if(!start || !end || start > end){
+    alert('تنخواہ کی درست مدت منتخب کریں۔');
+    return null;
+  }
+
+  if(!Number.isInteger(days) || days < 1 ||
+     ![present, paid, unpaid].every(n => Number.isInteger(n) && n >= 0) ||
+     present + paid + unpaid > days ||
+     !Number.isFinite(allowance) || allowance < 0 ||
+     !Number.isFinite(deduction) || deduction < 0){
+    alert('حاضری، چھٹیوں، الاؤنس اور کٹوتی کی رقم چیک کریں۔ دن کل دنوں سے زیادہ نہیں ہوسکتے۔');
+    return null;
+  }
+
+  const daily = Number(employee.salary) / days;
+  const unpaidDeduction = daily * unpaid;
+  const gross = Number(employee.salary) - unpaidDeduction + allowance;
+  const net = Math.max(0, gross - deduction);
+
+  return {
+    id: employee.id,
+    name: employee.name,
+    designation: employee.designation || 'Other',
+    phone: employee.phone || '',
+    basic: Number(employee.salary),
+    start, end, days, present, paid, unpaid,
+    allowance, deduction, unpaidDeduction, gross, net
+  };
 }
+
+function calculationHTML(r){
+  return `
+    <div class="resultbox">
+      <p><b>ملازم:</b> ${esc(r.name)}</p>
+      <p><b>عہدہ:</b> ${esc(r.designation)}</p>
+      <p><b>مدت:</b> ${esc(r.start)} تا ${esc(r.end)}</p>
+      <p>بنیادی تنخواہ: <b>${money(r.basic)}</b></p>
+      <p>حاضر دن: ${r.present} / ${r.days}</p>
+      <p>تنخواہ سمیت چھٹیاں: ${r.paid} دن</p>
+      <p>بغیر تنخواہ چھٹیاں: ${r.unpaid} دن</p>
+      <p>غیر ادا شدہ چھٹیوں کی کٹوتی: <b>${money(r.unpaidDeduction)}</b></p>
+      <p>اضافی الاؤنس: ${money(r.allowance)}</p>
+      <p>دیگر کٹوتی: ${money(r.deduction)}</p>
+      <h2>خالص تنخواہ: ${money(r.net)}</h2>
+      <small>حساب میں صرف غیر ادا شدہ چھٹیوں اور دیگر کٹوتی کو منہا کیا جاتا ہے۔ ادائیگی سے پہلے اپنی کمپنی کی پالیسی کی تصدیق کریں۔</small>
+    </div>`;
+}
+
 function calculate(){
- lastCalculation=getCalculation();
- if(!lastCalculation)return;
- const r=lastCalculation;
- $('result').innerHTML=`
- <hr><p>Basic Salary: <b>${money(r.basic)}</b></p>
- <p>Unpaid Leave Deduction: <b>${money(r.unpaidDeduction)}</b></p>
- <p>Allowance: <b>${money(r.allowance)}</b></p>
- <p>Other Deduction: <b>${money(r.deduction)}</b></p>
- <h2>Net Salary: ${money(r.net)}</h2>
- <small>Paid leave is counted as paid time. This calculation deducts only unpaid leave. Verify company policy before payment.</small>`;
+  lastCalculation = getCalculation();
+  if(!lastCalculation) return;
+  $('result').innerHTML = calculationHTML(lastCalculation);
 }
+
 function savePayroll(){
- const r=getCalculation();
- if(!r)return;
- const exists=records.some(x=>x.id===r.id&&x.start===r.start&&x.end===r.end);
- if(exists&&!confirm('A payroll record exists for this employee and period. Save another record?'))return;
- records.push({...r,savedAt:new Date().toISOString()});
- if(persist()){lastCalculation=r;refresh();alert('Payroll saved.')}
- else records.pop();
+  const r = getCalculation();
+  if(!r) return;
+
+  const exists = records.some(
+    x => x.id === r.id && x.start === r.start && x.end === r.end
+  );
+
+  if(exists && !confirm('اس ملازم اور مدت کا ریکارڈ پہلے موجود ہے۔ کیا آپ ایک اور ریکارڈ محفوظ کرنا چاہتے ہیں؟')){
+    return;
+  }
+
+  const saved = {...r, savedAt: new Date().toISOString()};
+  records.push(saved);
+
+  if(persist()){
+    lastCalculation = saved;
+    refresh();
+    showSlip(records.length - 1);
+    alert('تنخواہ کا ریکارڈ محفوظ ہوگیا۔');
+  }else{
+    records.pop();
+  }
 }
-function showSlip(i){
- const r=records[i];
- $('result').innerHTML=`
- <div id="slip"><hr><h2>Salary Slip</h2>
- <p><b>Employee:</b> ${esc(r.name)}</p>
- <p><b>Employee ID:</b> ${esc(r.id)}</p>
- <p><b>Period:</b> ${esc(r.start)} to ${esc(r.end)}</p>
- <p>Basic Salary: ${money(r.basic)}</p>
- <p>Present Days: ${r.present} / ${r.days}</p>
- <p>Paid Leave: ${r.paid} days</p>
- <p>Unpaid Leave: ${r.unpaid} days</p>
- <p>Unpaid Deduction: ${money(r.unpaidDeduction)}</p>
- <p>Allowance: ${money(r.allowance)}</p>
- <p>Other Deduction: ${money(r.deduction)}</p>
- <h2>Net Pay: ${money(r.net)}</h2>
- <p>Employee Signature: ______________</p>
- <p>Authorized Signature: ______________</p></div>
- <button onclick="window.print()">Print / Save PDF</button>`;
- $('result').scrollIntoView({behavior:'smooth'});
+
+function showSlip(index){
+  const r = records[index];
+  if(!r) return;
+
+  $('result').innerHTML = `
+    <div id="slip" class="resultbox">
+      <h2>تنخواہ کی سلپ / Salary Slip</h2>
+      <hr>
+      <p><b>ادارے کا نام:</b> __________________</p>
+      <p><b>ملازم کا نام:</b> ${esc(r.name)}</p>
+      <p><b>ملازم نمبر:</b> ${esc(r.id)}</p>
+      <p><b>عہدہ:</b> ${esc(r.designation || 'Other')}</p>
+      <p><b>موبائل:</b> ${esc(r.phone || '')}</p>
+      <p><b>تنخواہ کی مدت:</b> ${esc(r.start)} تا ${esc(r.end)}</p>
+      <hr>
+      <p>بنیادی تنخواہ: ${money(r.basic)}</p>
+      <p>حاضر دن: ${r.present} / ${r.days}</p>
+      <p>تنخواہ سمیت چھٹیاں: ${r.paid} دن</p>
+      <p>بغیر تنخواہ چھٹیاں: ${r.unpaid} دن</p>
+      <p>غیر ادا شدہ چھٹیوں کی کٹوتی: ${money(r.unpaidDeduction)}</p>
+      <p>الاؤنس: ${money(r.allowance)}</p>
+      <p>دیگر کٹوتی: ${money(r.deduction)}</p>
+      <hr>
+      <h2>ادا کی جانے والی تنخواہ: ${money(r.net)}</h2>
+      <p>ملازم کے دستخط: __________________</p>
+      <p>مجاز افسر کے دستخط: __________________</p>
+    </div>
+    <button class="noprint" onclick="window.print()">سلپ پرنٹ کریں / PDF محفوظ کریں</button>`;
+  $('result').scrollIntoView({behavior:'smooth'});
 }
+
 function exportCSV(){
- const rows=[['Employee ID','Name','Period Start','Period End','Basic Salary','Total Days','Present','Paid Leave','Unpaid Leave','Unpaid Deduction','Allowance','Deduction','Net Salary'],
- ...records.map(r=>[r.id,r.name,r.start,r.end,r.basic,r.days,r.present,r.paid,r.unpaid,r.unpaidDeduction,r.allowance,r.deduction,r.net])];
- const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
- const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
- const url=URL.createObjectURL(blob);
- const a=document.createElement('a');a.href=url;a.download='salary-payroll.csv';a.click();
- URL.revokeObjectURL(url);
+  const rows = [
+    ['Employee ID','Name','Designation','Phone','Period Start','Period End',
+     'Basic Salary','Total Days','Present','Paid Leave','Unpaid Leave',
+     'Unpaid Deduction','Allowance','Deduction','Net Salary'],
+    ...records.map(r => [
+      r.id,r.name,r.designation || 'Other',r.phone || '',
+      r.start,r.end,r.basic,r.days,r.present,r.paid,r.unpaid,
+      r.unpaidDeduction,r.allowance,r.deduction,r.net
+    ])
+  ];
+
+  const csv = rows.map(row =>
+    row.map(v => '"' + String(v ?? '').replace(/"/g,'""') + '"').join(',')
+  ).join('\r\n');
+
+  const blob = new Blob(['\uFEFF' + csv], {
+    type:'text/csv;charset=utf-8;'
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'salary-payroll.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
+
+persist();
 refresh();
 </script>
 </body>
