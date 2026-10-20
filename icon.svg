@@ -1,0 +1,8 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="90" fill="#123b68"/>
+  <path d="M256 45 L420 110 V225 C420 335 350 415 256 467 C162 415 92 335 92 225 V110 Z" fill="#ffffff"/>
+  <path d="M256 78 L390 130 V224 C390 315 333 382 256 428 C179 382 122 315 122 224 V130 Z" fill="#123b68"/>
+  <path d="M175 225 L225 275 L337 162" fill="none" stroke="#ffffff" stroke-width="23" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="256" y="365" font-family="Arial, sans-serif" font-size="91" font-weight="bold" text-anchor="middle" fill="#ffffff">MSM</text>
+</svg>
