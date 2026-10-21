@@ -8,6 +8,7 @@
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#123b68">
+
 <style>
 *{box-sizing:border-box}
 body{font-family:Arial,sans-serif;background:#f1f5f9;margin:0;color:#172033}
@@ -23,31 +24,42 @@ button{padding:11px 14px;border:0;border-radius:7px;background:#1764aa;color:whi
 button.secondary{background:#475569}
 button.danger{background:#b42318}
 button.edit{background:#087f5b}
+button.report{background:#123b68}
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .stat{background:#eaf3ff;padding:13px;border-radius:8px}
 .stat strong{display:block;font-size:21px;margin-top:6px;overflow-wrap:anywhere}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{padding:9px 6px;border-bottom:1px solid #e2e8f0;text-align:left;white-space:normal}
+th,td{padding:9px 6px;border:1px solid #cbd5e1;text-align:left;white-space:normal}
+th{background:#eaf3ff}
 .tablewrap{overflow-x:auto}
 small{color:#64748b}
 #message{margin-top:10px;color:#1764aa}
 .resultbox{background:#f8fafc;padding:12px;border-radius:8px;margin-top:12px}
-@media(max-width:420px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}header h1{font-size:22px}}
+.report-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.report-buttons button{margin:0;width:100%;min-height:46px}
+@media(max-width:520px){
+ .grid{grid-template-columns:1fr}
+ .stats{grid-template-columns:1fr 1fr}
+ .report-buttons{grid-template-columns:1fr}
+ header h1{font-size:22px}
+}
 @media print{
- header,form,.noprint,#dashboard,#attendanceCard,#employeeCard,#recordsCard{display:none!important}
- body{background:white}
- main{padding:0}
- #resultCard{display:block!important;box-shadow:none}
+ @page{size:A4 landscape;margin:10mm}
+ body{background:white;color:#000}
+ header,.noprint,form,#dashboard,#attendanceCard,#employeeCard,#recordsCard,#reportCard{display:none!important}
+ main{max-width:none;margin:0;padding:0}
+ #resultCard{display:block!important;box-shadow:none;padding:0;margin:0}
  #resultCard .noprint{display:none!important}
  #slip{display:block!important}
 }
 </style>
 </head>
+
 <body>
 <header>
-<h1>Salary Manager</h1>
-<p>ملازمین • عہدے • حاضری • ماہانہ تنخواہ • تنخواہ سلپ</p>
+<h1>MSM - Security Salary Manager</h1>
+<p>ملازمین • عہدے • حاضری • ماہانہ تنخواہ • آڈٹ رپورٹس</p>
 </header>
 
 <main>
@@ -108,6 +120,7 @@ small{color:#64748b}
 <option value="">ملازم منتخب کریں</option>
 </select>
 <div id="selectedInfo"></div>
+
 <div class="grid">
 <div><label>تنخواہ کی مدت شروع</label><input id="periodStart" type="date" required></div>
 <div><label>تنخواہ کی مدت ختم</label><input id="periodEnd" type="date" required></div>
@@ -118,14 +131,15 @@ small{color:#64748b}
 <div><label>اضافی الاؤنس (PKR)</label><input id="allowance" type="number" min="0" value="0"></div>
 <div><label>دیگر کٹوتی (PKR)</label><input id="deduction" type="number" min="0" value="0"></div>
 </div>
-<p><small>حاضر دن + تنخواہ سمیت چھٹیاں + بغیر تنخواہ چھٹیاں، کل دنوں سے زیادہ نہیں ہونے چاہئیں۔ صرف بغیر تنخواہ چھٹیوں کی کٹوتی ہوگی۔</small></p>
+
+<p><small>حاضر دن + ادا شدہ چھٹیاں + غیر ادا شدہ چھٹیاں کل دنوں سے زیادہ نہیں ہونے چاہئیں۔</small></p>
 <button type="button" onclick="calculate()">تنخواہ کا حساب</button>
 <button type="button" onclick="savePayroll()">تنخواہ محفوظ کریں</button>
 </section>
 
 <section class="card" id="resultCard">
 <h2>حساب / تنخواہ سلپ</h2>
-<div id="result" aria-live="polite">پہلے ملازم منتخب کرکے تنخواہ کا حساب کریں۔</div>
+<div id="result">پہلے ملازم منتخب کرکے تنخواہ کا حساب کریں۔</div>
 </section>
 
 <section class="card" id="employeeCard">
@@ -133,7 +147,7 @@ small{color:#64748b}
 <div class="tablewrap">
 <table>
 <thead>
-<tr><th>نمبر</th><th>نام اور موبائل</th><th>عہدہ</th><th>تنخواہ</th><th>عمل</th></tr>
+<tr><th>ملازم نمبر</th><th>نام اور موبائل</th><th>عہدہ</th><th>تنخواہ</th><th>عمل</th></tr>
 </thead>
 <tbody id="employeeRows"></tbody>
 </table>
@@ -145,32 +159,46 @@ small{color:#64748b}
 <div class="tablewrap">
 <table>
 <thead>
-<tr><th>ملازم</th><th>عہدہ</th><th>مدت</th><th>حاضر</th><th>ادا شدہ چھٹی</th><th>غیر ادا شدہ چھٹی</th><th>خالص تنخواہ</th><th>سلپ</th></tr>
+<tr>
+<th>ملازم</th><th>عہدہ</th><th>مدت</th>
+<th>حاضر</th><th>ادا شدہ چھٹی</th>
+<th>غیر ادا شدہ چھٹی</th><th>خالص تنخواہ</th><th>سلپ</th>
+</tr>
 </thead>
 <tbody id="payrollRows"></tbody>
 </table>
 </div>
-<button class="secondary" onclick="exportCSV()">CSV میں ریکارڈ ڈاؤن لوڈ کریں</button>
+<button class="secondary" onclick="exportCSV()">CSV ڈاؤن لوڈ کریں</button>
+</section>
+
+<!-- نئی پرنٹ رپورٹ سہولت -->
+<section class="card" id="reportCard">
+<h2>پرنٹ اور آڈٹ رپورٹس</h2>
+<p>نیچے مطلوبہ رپورٹ منتخب کریں۔ رپورٹ میں محفوظ شدہ تنخواہوں کا ریکارڈ استعمال ہوگا۔</p>
+
+<div class="report-buttons">
+<button class="report" onclick="printReport('salary')">سیلری رجسٹر پرنٹ</button>
+<button class="report" onclick="printReport('attendance')">حاضری رجسٹر پرنٹ</button>
+<button class="report" onclick="printReport('audit')">مکمل آڈٹ رپورٹ پرنٹ</button>
+<button class="secondary" onclick="printReport('all')">تمام رپورٹس پرنٹ</button>
+</div>
+
+<p><small>پرنٹ ونڈو میں اپنے پرنٹر کا انتخاب کریں یا Save as PDF استعمال کریں۔ رپورٹس محفوظ شدہ تنخواہوں کے ریکارڈ سے بنتی ہیں۔</small></p>
 </section>
 </main>
 
 <script>
 const $ = id => document.getElementById(id);
+
 const money = n => 'Rs. ' + Number(n || 0).toLocaleString('en-PK',{
   maximumFractionDigits:2
 });
 
 const designations = [
-  "Manager",
-  "General Manager (GM)",
-  "Operations Manager",
-  "Security Guard",
-  "Driver",
-  "Bike Rider",
-  "MVO / Vigilance Officer",
-  "Duty Officer",
-  "CCTV Operator",
-  "Control Room Operator"
+  "Manager","General Manager (GM)","Operations Manager",
+  "Security Guard","Driver","Bike Rider",
+  "MVO / Vigilance Officer","Duty Officer",
+  "CCTV Operator","Control Room Operator"
 ];
 
 function read(key){
@@ -186,7 +214,6 @@ let employees = read('sm_employees');
 let records = read('sm_payroll');
 let lastCalculation = null;
 
-/* پرانے ریکارڈ برقرار رکھیں اور نئے فیلڈز شامل کریں */
 employees = employees.map(e => ({
   ...e,
   designation: e.designation || 'Other'
@@ -204,25 +231,22 @@ function persist(){
     localStorage.setItem('sm_payroll', JSON.stringify(records));
     return true;
   }catch(e){
-    alert('ریکارڈ محفوظ نہیں ہو سکا۔ براہ کرم جگہ خالی کریں اور ریکارڈ کا بیک اپ رکھیں۔');
+    alert('ریکارڈ محفوظ نہیں ہو سکا۔ براہ کرم بیک اپ رکھیں۔');
     return false;
   }
 }
 
 function esc(s){
   return String(s ?? '').replace(/[&<>"']/g, c => ({
-    '&':'&amp;',
-    '<':'&lt;',
-    '>':'&gt;',
-    '"':'&quot;',
-    "'":'&#39;'
+    '&':'&amp;','<':'&lt;','>':'&gt;',
+    '"':'&quot;',"'":'&#39;'
   }[c]));
 }
 
 function refresh(){
   $('total').textContent = employees.length;
   $('payroll').textContent = money(
-    records.reduce((sum, r) => sum + Number(r.net || 0), 0)
+    records.reduce((sum,r) => sum + Number(r.net || 0),0)
   );
 
   const oldSelected = $('employeeSelect').value;
@@ -250,21 +274,21 @@ function refresh(){
     </tr>
   `).join('');
 
-  $('payrollRows').innerHTML = records.map((r, i) => `
+  $('payrollRows').innerHTML = records.map((r,i) => `
     <tr>
       <td>${esc(r.name)} (${esc(r.id)})</td>
       <td>${esc(r.designation || 'Other')}</td>
       <td>${esc(r.start)} تا ${esc(r.end)}</td>
-      <td>${r.present}</td>
-      <td>${r.paid}</td>
-      <td>${r.unpaid}</td>
+      <td>${Number(r.present || 0)}</td>
+      <td>${Number(r.paid || 0)}</td>
+      <td>${Number(r.unpaid || 0)}</td>
       <td>${money(r.net)}</td>
       <td><button onclick="showSlip(${i})">سلپ دیکھیں</button></td>
     </tr>
   `).join('');
 }
 
-$('employeeForm').addEventListener('submit', e => {
+$('employeeForm').addEventListener('submit',e => {
   e.preventDefault();
 
   const id = $('eid').value.trim();
@@ -289,8 +313,7 @@ $('employeeForm').addEventListener('submit', e => {
     return;
   }
 
-  const employee = {id, name, designation, phone, salary};
-  employees.push(employee);
+  employees.push({id,name,designation,phone,salary});
 
   if(!persist()){
     employees.pop();
@@ -324,11 +347,7 @@ function editSalary(encoded){
   const employee = employees.find(e => e.id === id);
   if(!employee) return;
 
-  const answer = prompt(
-    'نئی ماہانہ تنخواہ درج کریں (PKR):',
-    String(employee.salary)
-  );
-
+  const answer = prompt('نئی ماہانہ تنخواہ درج کریں (PKR):',String(employee.salary));
   if(answer === null) return;
 
   if(answer.trim() === '' || !Number.isFinite(Number(answer)) || Number(answer) < 0){
@@ -341,13 +360,13 @@ function editSalary(encoded){
 
   if(persist()){
     refresh();
-    alert('نئی تنخواہ محفوظ ہوگئی۔ پہلے سے محفوظ تنخواہ کی سلپس تبدیل نہیں ہوں گی۔');
+    alert('نئی تنخواہ محفوظ ہوگئی۔ پرانی سلپس تبدیل نہیں ہوں گی۔');
   }else{
     employee.salary = oldSalary;
   }
 }
 
-$('employeeSelect').addEventListener('change', () => {
+$('employeeSelect').addEventListener('change',() => {
   const employee = employees.find(e => e.id === $('employeeSelect').value);
 
   if(!employee){
@@ -355,8 +374,8 @@ $('employeeSelect').addEventListener('change', () => {
     return;
   }
 
-  $('selectedInfo').innerHTML =
-    `<div class="resultbox">
+  $('selectedInfo').innerHTML = `
+    <div class="resultbox">
       <b>${esc(employee.name)}</b><br>
       عہدہ: ${esc(employee.designation || 'Other')}<br>
       بنیادی تنخواہ: ${money(employee.salary)}
@@ -388,27 +407,26 @@ function getCalculation(){
   }
 
   if(!Number.isInteger(days) || days < 1 ||
-     ![present, paid, unpaid].every(n => Number.isInteger(n) && n >= 0) ||
+     ![present,paid,unpaid].every(n => Number.isInteger(n) && n >= 0) ||
      present + paid + unpaid > days ||
      !Number.isFinite(allowance) || allowance < 0 ||
      !Number.isFinite(deduction) || deduction < 0){
-    alert('حاضری، چھٹیوں، الاؤنس اور کٹوتی کی رقم چیک کریں۔ دن کل دنوں سے زیادہ نہیں ہوسکتے۔');
+    alert('حاضری، چھٹیوں، الاؤنس اور کٹوتی کی رقم چیک کریں۔');
     return null;
   }
 
   const daily = Number(employee.salary) / days;
   const unpaidDeduction = daily * unpaid;
   const gross = Number(employee.salary) - unpaidDeduction + allowance;
-  const net = Math.max(0, gross - deduction);
+  const net = Math.max(0,gross - deduction);
 
   return {
-    id: employee.id,
-    name: employee.name,
-    designation: employee.designation || 'Other',
-    phone: employee.phone || '',
-    basic: Number(employee.salary),
-    start, end, days, present, paid, unpaid,
-    allowance, deduction, unpaidDeduction, gross, net
+    id:employee.id,name:employee.name,
+    designation:employee.designation || 'Other',
+    phone:employee.phone || '',
+    basic:Number(employee.salary),
+    start,end,days,present,paid,unpaid,
+    allowance,deduction,unpaidDeduction,gross,net
   };
 }
 
@@ -422,11 +440,10 @@ function calculationHTML(r){
       <p>حاضر دن: ${r.present} / ${r.days}</p>
       <p>تنخواہ سمیت چھٹیاں: ${r.paid} دن</p>
       <p>بغیر تنخواہ چھٹیاں: ${r.unpaid} دن</p>
-      <p>غیر ادا شدہ چھٹیوں کی کٹوتی: <b>${money(r.unpaidDeduction)}</b></p>
+      <p>غیر ادا شدہ چھٹیوں کی کٹوتی: ${money(r.unpaidDeduction)}</p>
       <p>اضافی الاؤنس: ${money(r.allowance)}</p>
       <p>دیگر کٹوتی: ${money(r.deduction)}</p>
       <h2>خالص تنخواہ: ${money(r.net)}</h2>
-      <small>حساب میں صرف غیر ادا شدہ چھٹیوں اور دیگر کٹوتی کو منہا کیا جاتا ہے۔ ادائیگی سے پہلے اپنی کمپنی کی پالیسی کی تصدیق کریں۔</small>
     </div>`;
 }
 
@@ -440,21 +457,20 @@ function savePayroll(){
   const r = getCalculation();
   if(!r) return;
 
-  const exists = records.some(
-    x => x.id === r.id && x.start === r.start && x.end === r.end
+  const exists = records.some(x =>
+    x.id === r.id && x.start === r.start && x.end === r.end
   );
 
   if(exists && !confirm('اس ملازم اور مدت کا ریکارڈ پہلے موجود ہے۔ کیا آپ ایک اور ریکارڈ محفوظ کرنا چاہتے ہیں؟')){
     return;
   }
 
-  const saved = {...r, savedAt: new Date().toISOString()};
-  records.push(saved);
+  records.push({...r,savedAt:new Date().toISOString()});
 
   if(persist()){
-    lastCalculation = saved;
+    lastCalculation = records[records.length-1];
     refresh();
-    showSlip(records.length - 1);
+    showSlip(records.length-1);
     alert('تنخواہ کا ریکارڈ محفوظ ہوگیا۔');
   }else{
     records.pop();
@@ -467,31 +483,229 @@ function showSlip(index){
 
   $('result').innerHTML = `
     <div id="slip" class="resultbox">
-      <h2>تنخواہ کی سلپ / Salary Slip</h2>
-      <hr>
-      <p><b>ادارے کا نام:</b> __________________</p>
+      <h2>تنخواہ کی سلپ / Salary Slip</h2><hr>
+      <p><b>ادارے کا نام:</b> MSM - Security</p>
       <p><b>ملازم کا نام:</b> ${esc(r.name)}</p>
       <p><b>ملازم نمبر:</b> ${esc(r.id)}</p>
       <p><b>عہدہ:</b> ${esc(r.designation || 'Other')}</p>
       <p><b>موبائل:</b> ${esc(r.phone || '')}</p>
-      <p><b>تنخواہ کی مدت:</b> ${esc(r.start)} تا ${esc(r.end)}</p>
-      <hr>
+      <p><b>تنخواہ کی مدت:</b> ${esc(r.start)} تا ${esc(r.end)}</p><hr>
       <p>بنیادی تنخواہ: ${money(r.basic)}</p>
-      <p>حاضر دن: ${r.present} / ${r.days}</p>
-      <p>تنخواہ سمیت چھٹیاں: ${r.paid} دن</p>
-      <p>بغیر تنخواہ چھٹیاں: ${r.unpaid} دن</p>
+      <p>حاضر دن: ${Number(r.present || 0)} / ${Number(r.days || 0)}</p>
+      <p>تنخواہ سمیت چھٹیاں: ${Number(r.paid || 0)} دن</p>
+      <p>بغیر تنخواہ چھٹیاں: ${Number(r.unpaid || 0)} دن</p>
       <p>غیر ادا شدہ چھٹیوں کی کٹوتی: ${money(r.unpaidDeduction)}</p>
       <p>الاؤنس: ${money(r.allowance)}</p>
-      <p>دیگر کٹوتی: ${money(r.deduction)}</p>
-      <hr>
+      <p>دیگر کٹوتی: ${money(r.deduction)}</p><hr>
       <h2>ادا کی جانے والی تنخواہ: ${money(r.net)}</h2>
       <p>ملازم کے دستخط: __________________</p>
       <p>مجاز افسر کے دستخط: __________________</p>
     </div>
     <button class="noprint" onclick="window.print()">سلپ پرنٹ کریں / PDF محفوظ کریں</button>`;
+
   $('result').scrollIntoView({behavior:'smooth'});
 }
 
+/* نئی رپورٹس کے لیے مشترکہ HTML */
+function reportTable(headers,rows){
+  return `
+    <table>
+      <thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${rows.length ? rows.map(row =>
+          `<tr>${row.map(v=>`<td>${esc(v ?? '')}</td>`).join('')}</tr>`
+        ).join('') : `<tr><td colspan="${headers.length}">کوئی محفوظ ریکارڈ موجود نہیں</td></tr>`}
+      </tbody>
+    </table>`;
+}
+
+function reportDocument(title,content){
+  const generated = new Date().toLocaleString('en-PK');
+  return `<!DOCTYPE html>
+<html lang="ur">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(title)}</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:Arial,sans-serif;color:#111;margin:18px}
+h1,h2,p{text-align:center}
+h1{font-size:22px;margin-bottom:5px}
+h2{font-size:18px;margin-top:8px}
+.meta{font-size:12px;color:#444}
+table{width:100%;border-collapse:collapse;font-size:11px;margin-top:18px}
+th,td{border:1px solid #555;padding:6px;text-align:left;overflow-wrap:anywhere}
+th{background:#e8edf3}
+.summary{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.box{border:1px solid #777;padding:10px;flex:1;min-width:130px}
+.signatures{display:flex;justify-content:space-between;gap:20px;margin-top:45px}
+.signatures div{width:30%;border-top:1px solid #333;text-align:center;padding-top:7px}
+.actions{text-align:center;margin:18px}
+button{padding:10px 18px;cursor:pointer}
+@page{size:A4 landscape;margin:10mm}
+@media print{
+ body{margin:0}
+ .actions{display:none}
+ tr{break-inside:avoid}
+ thead{display:table-header-group}
+}
+</style>
+</head>
+<body>
+<div class="actions">
+<button onclick="window.print()">پرنٹ کریں / Save as PDF</button>
+<button onclick="window.close()">بند کریں</button>
+</div>
+<h1>MSM - Security Salary Manager</h1>
+<h2>${esc(title)}</h2>
+<p class="meta">رپورٹ تیار ہونے کا وقت: ${esc(generated)}</p>
+${content}
+<div class="signatures">
+<div>تیار کرنے والے کے دستخط</div>
+<div>چیک کرنے والے کے دستخط</div>
+<div>منظور کرنے والے کے دستخط</div>
+</div>
+</body>
+</html>`;
+}
+
+function printReport(type){
+  if(!records.length){
+    alert('ابھی کوئی محفوظ تنخواہ موجود نہیں۔ پہلے تنخواہ کا ریکارڈ محفوظ کریں۔');
+    return;
+  }
+
+  const salaryRows = records.map(r => [
+    r.id,r.name,r.designation || 'Other',
+    r.start + ' تا ' + r.end,
+    money(r.basic),money(r.allowance),
+    money(r.unpaidDeduction),money(r.deduction),money(r.net)
+  ]);
+
+  const attendanceRows = records.map(r => [
+    r.id,r.name,r.designation || 'Other',
+    r.start + ' تا ' + r.end,
+    Number(r.days || 0),Number(r.present || 0),
+    Number(r.paid || 0),Number(r.unpaid || 0)
+  ]);
+
+  const employeeCount = new Set(records.map(r => r.id)).size;
+  const basicTotal = records.reduce((s,r)=>s+Number(r.basic||0),0);
+  const allowanceTotal = records.reduce((s,r)=>s+Number(r.allowance||0),0);
+  const unpaidTotal = records.reduce((s,r)=>s+Number(r.unpaidDeduction||0),0);
+  const deductionTotal = records.reduce((s,r)=>s+Number(r.deduction||0),0);
+  const netTotal = records.reduce((s,r)=>s+Number(r.net||0),0);
+  const presentTotal = records.reduce((s,r)=>s+Number(r.present||0),0);
+  const paidTotal = records.reduce((s,r)=>s+Number(r.paid||0),0);
+  const unpaidDaysTotal = records.reduce((s,r)=>s+Number(r.unpaid||0),0);
+
+  const salaryContent = `
+    <p>محفوظ تنخواہوں کے ریکارڈ: ${records.length}</p>
+    ${reportTable([
+      'ملازم نمبر','نام','عہدہ','مدت','بنیادی تنخواہ',
+      'الاؤنس','غیر ادا شدہ چھٹی کٹوتی','دیگر کٹوتی','نیٹ تنخواہ'
+    ],salaryRows)}
+    <h2>کل خالص تنخواہ: ${money(netTotal)}</h2>`;
+
+  const attendanceContent = `
+    <p>یہ رپورٹ محفوظ شدہ تنخواہوں کے ریکارڈ میں درج حاضری دکھاتی ہے۔</p>
+    ${reportTable([
+      'ملازم نمبر','نام','عہدہ','مدت','کل دن',
+      'حاضر دن','ادا شدہ چھٹیاں','غیر ادا شدہ چھٹیاں'
+    ],attendanceRows)}
+    <h2>مجموعی حاضر دن: ${presentTotal} |
+    ادا شدہ چھٹیاں: ${paidTotal} |
+    غیر ادا شدہ چھٹیاں: ${unpaidDaysTotal}</h2>`;
+
+  const auditContent = `
+    <div class="summary">
+      <div class="box">ریکارڈز<strong>${records.length}</strong></div>
+      <div class="box">منفرد ملازمین<strong>${employeeCount}</strong></div>
+      <div class="box">بنیادی تنخواہوں کا مجموعہ<strong>${money(basicTotal)}</strong></div>
+      <div class="box">الاؤنس کا مجموعہ<strong>${money(allowanceTotal)}</strong></div>
+      <div class="box">غیر ادا شدہ چھٹیوں کی کٹوتی<strong>${money(unpaidTotal)}</strong></div>
+      <div class="box">دیگر کٹوتیاں<strong>${money(deductionTotal)}</strong></div>
+      <div class="box">نیٹ قابلِ ادائیگی تنخواہ<strong>${money(netTotal)}</strong></div>
+    </div>
+    <p>نوٹ: یہ مجموعے تمام محفوظ شدہ ریکارڈز کے ہیں۔ اگر ایک ملازم کے متعدد مہینوں کے ریکارڈ محفوظ ہیں تو ہر ریکارڈ مجموعے میں شمار ہوگا۔</p>
+    ${reportTable([
+      'ملازم نمبر','نام','مدت','بنیادی تنخواہ',
+      'الاؤنس','چھٹی کٹوتی','دیگر کٹوتی','نیٹ تنخواہ'
+    ],records.map(r=>[
+      r.id,r.name,r.start+' تا '+r.end,
+      money(r.basic),money(r.allowance),
+      money(r.unpaidDeduction),money(r.deduction),money(r.net)
+    ]))}
+    <h2>تصدیق شدہ مجموعی نیٹ تنخواہ: ${money(netTotal)}</h2>`;
+
+  let reports = [];
+
+  if(type === 'salary'){
+    reports.push(['Salary Register',salaryContent]);
+  }else if(type === 'attendance'){
+    reports.push(['Attendance Register',attendanceContent]);
+  }else if(type === 'audit'){
+    reports.push(['Complete Audit Report',auditContent]);
+  }else if(type === 'all'){
+    reports.push(['Salary Register',salaryContent]);
+    reports.push(['Attendance Register',attendanceContent]);
+    reports.push(['Complete Audit Report',auditContent]);
+  }else{
+    return;
+  }
+
+  const w = window.open('','_blank');
+
+  if(!w){
+    alert('رپورٹ ونڈو نہیں کھل سکی۔ براہ کرم براؤزر میں Pop-ups کی اجازت دیں۔');
+    return;
+  }
+
+  const fullHTML = reports.map((r,i)=>
+    (i ? '<div style="page-break-before:always"></div>' : '') +
+    reportDocument(r[0],r[1]).replace(
+      '<!DOCTYPE html>',''
+    ).replace(/<\/?html[^>]*>/gi,'')
+     .replace(/<head>[\s\S]*?<\/head>/i,'')
+     .replace(/<body[^>]*>|<\/body>/gi,'')
+  ).join('');
+
+  w.document.open();
+  w.document.write(`<!DOCTYPE html>
+<html lang="ur">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MSM Payroll Reports</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:Arial,sans-serif;color:#111;margin:18px}
+h1,h2,p{text-align:center}
+table{width:100%;border-collapse:collapse;font-size:11px;margin-top:18px}
+th,td{border:1px solid #555;padding:6px;text-align:left;overflow-wrap:anywhere}
+th{background:#e8edf3}
+.summary{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.box{border:1px solid #777;padding:10px;flex:1;min-width:130px}
+.signatures{display:flex;justify-content:space-between;gap:20px;margin-top:45px}
+.signatures div{width:30%;border-top:1px solid #333;text-align:center;padding-top:7px}
+.actions{text-align:center;margin:18px}
+button{padding:10px 18px;cursor:pointer}
+@page{size:A4 landscape;margin:10mm}
+@media print{body{margin:0}.actions{display:none}tr{break-inside:avoid}thead{display:table-header-group}}
+</style>
+</head>
+<body>
+<div class="actions">
+<button onclick="window.print()">پرنٹ کریں / Save as PDF</button>
+<button onclick="window.close()">بند کریں</button>
+</div>
+${fullHTML}
+</body></html>`);
+  w.document.close();
+}
+
+/* CSV ایکسل میں کھولنے کے لیے */
 function exportCSV(){
   const rows = [
     ['Employee ID','Name','Designation','Phone','Period Start','Period End',
@@ -508,9 +722,7 @@ function exportCSV(){
     row.map(v => '"' + String(v ?? '').replace(/"/g,'""') + '"').join(',')
   ).join('\r\n');
 
-  const blob = new Blob(['\uFEFF' + csv], {
-    type:'text/csv;charset=utf-8;'
-  });
+  const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -518,7 +730,7 @@ function exportCSV(){
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
 persist();
